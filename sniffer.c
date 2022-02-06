@@ -43,7 +43,7 @@ int main(int argc, char ** argv){
 	}
 
 	printf("Starting capture loop\n");
-	pcap_loop(handle, 1000, packetHandler, NULL);
+	pcap_loop(handle, 5000, packetHandler, NULL);
 
 
 	printf("\n");

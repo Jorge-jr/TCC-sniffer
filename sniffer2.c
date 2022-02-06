@@ -7,11 +7,15 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <time.h>
+#include <pthread.h>
 #define PORT 8888
 
 
 
 void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
+void channel_hopper();
+
 
 typedef struct device{
 	uint8_t address[6];
@@ -20,13 +24,31 @@ typedef struct device{
 }device ;
 
 
+void channel_hopper(){
+	int channel;
+	char str[24];
+	srand(time(NULL));
+	while (1){
+		sprintf(str, "iw dev mon0 set channel %d", channel);
+		system("ip link set dev wlan0 down");
+		sleep(1);
+		system(str);
+		//system(" ip link set dev wlan0 up");
+		system("iwlist mon0 channel");
+		sleep(0.5);
+		channel = (rand() % 11) + 1;
+	}
+}
+
+
+pthread_t hopper;
 device *devices;
 int sniffed_devices = 0;
 
 int main(int argc, char ** argv){
 
 
-
+	//pthread_create(&hopper, NULL, channel_hopper, NULL);
 	char device[] = "mon0";
 	char *errbuf;
 	int linktype;
@@ -45,7 +67,7 @@ int main(int argc, char ** argv){
 	}
 
 	printf("Starting capture loop\n");
-	pcap_loop(handle, 1000, packetHandler, NULL);
+	pcap_loop(handle, 5000, packetHandler, NULL);
 
 
 	printf("\n");
@@ -71,12 +93,13 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 
 
 	int socket_desc;  //socket descriptor
-	socket_desc = socket(AF_INET, SOCK_STREAM, 0);  //AF_INET = IPV4  --  SOCK_STREAM = TCP
+	socket_desc = socket(AF_INET, SOCK_DGRAM,IPPROTO_UDP);  //AF_INET = IPV4  --  SOCK_STREAM = TCP
 	if(socket_desc == -1) printf("Could not create socket");
 	struct sockaddr_in server;
+	int server_struct_len = sizeof(server);
 	server.sin_family = AF_INET;
 	server.sin_port = htons(PORT);
-	server.sin_addr.s_addr = inet_addr("192.168.0.128");
+	server.sin_addr.s_addr = inet_addr("192.168.0.127");
 
 
 	struct ieee80211_radiotap_header *rthdr;
@@ -111,7 +134,7 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 			int sockerr = send(socket_desc, message, strlen(message) , 0);
 			if (sockerr >= 0){
 
-			 	printf("%s sended\n", message);
+			 	printf("%s sended!\n", message);
 			}else{
 				printf("socket error %d -> %s\n", sockerr, message);
 			}
@@ -171,11 +194,12 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
                         	                                            hdr->sa[2],
                                 	                                    hdr->sa[3],
                                         	                            hdr->sa[4],
-                                                	                    hdr->sa[5]);
+                        	                    			    hdr->sa[5]);
+
 			int sockerr = send(socket_desc, message, strlen(message) , 0);
 			if (sockerr >= 0){
 
-			 	printf("%s sended\n", message);
+			 	printf("%s sended!\n", message);
 			}else{
 				printf("socket error %d -> %s\n", sockerr, message);
 			}
