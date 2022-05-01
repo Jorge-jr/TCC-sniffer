@@ -91,6 +91,7 @@ int main(int argc, char ** argv){
 void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet){
 
 
+	int is_beacon = 0;
 	char hostname[10];
 	hostname[9] = '\0';
 	gethostname(hostname, 10);
@@ -114,6 +115,7 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
         if ((*type_subtype & 12) == 12){
                 printf("Not an ieee802.11 frame type!\n");
         }else if ((*type_subtype & 12) == 0){  //type = 00 ->  management
+		if ((*type_subtype & 240) == 128) is_beacon = 1; // 10000000 and 11110000 = 10000000 -> trata-se de um beacon
 		struct mgmt_header_t *hdr = (struct mgmt_header_t *) (packet + rthdr->it_len);
 
 		if (connect(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0){
@@ -127,13 +129,14 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 			//struct device *new_dev = (struct device *) malloc (sizeof(struct device));
 			//new_dev->address[0] = hdr->sa[0];
 			//FILE *fd = fdopen(socket_desc, "w");
-			sprintf(message,"%02x:%02x:%02x:%02x:%02x:%02x - %s \n", hdr->sa[0],
+			sprintf(message,"%02x:%02x:%02x:%02x:%02x:%02x - %s - %d \n", hdr->sa[0],
                 	                                                    hdr->sa[1],
                         	                                            hdr->sa[2],
                                 	                                    hdr->sa[3],
                                         	                            hdr->sa[4],
                                                 	                    hdr->sa[5],
-									    hostname);
+									    hostname,
+									    is_beacon);
 			int sockerr = send(socket_desc, message, strlen(message) , 0);
 			if (sockerr >= 0){
 
@@ -192,13 +195,14 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 			//struct device *new_dev = (struct device *) malloc (sizeof(struct device));
 			//new_dev->address[0] = hdr->sa[0];
 			//FILE *fd = fdopen(socket_desc, "w");
-			sprintf(message,"%02x:%02x:%02x:%02x:%02x:%02x - %s \n", hdr->sa[0],
+			sprintf(message,"%02x:%02x:%02x:%02x:%02x:%02x - %s - %d \n", hdr->sa[0],
                 	                                                    hdr->sa[1],
                         	                                            hdr->sa[2],
                                 	                                    hdr->sa[3],
                                         	                            hdr->sa[4],
                         	                    			    hdr->sa[5],
-									    hostname);
+									    hostname,
+									    is_beacon);
 
 			int sockerr = send(socket_desc, message, strlen(message) , 0);
 			if (sockerr >= 0){
