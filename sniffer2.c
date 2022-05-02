@@ -30,7 +30,7 @@ void channel_hopper(){
 	srand(time(NULL));
 	while (1){
 		sprintf(str, "iw dev mon0 set channel %d", channel);
-		system("ip link set dev wlan0 down");
+		system("ifconfig wlan0 down");
 		sleep(1);
 		system(str);
 		//system(" ip link set dev wlan0 up");
@@ -48,12 +48,12 @@ int sniffed_devices = 0;
 int main(int argc, char ** argv){
 
 
-	//pthread_create(&hopper, NULL, channel_hopper, NULL);
+	pthread_create(&hopper, NULL, channel_hopper, NULL);
 	char device[] = "mon0";
 	char *errbuf;
 	int linktype;
 
-	printf("Monitorando a partir da interface: %s\n", device);
+	printf("Monitoring interface: %s\n", device);
 
 	pcap_t *handle;
 	handle = pcap_open_live(device, BUFSIZ, 1, 0, errbuf);  //3000 ms buffer timeout
@@ -67,7 +67,7 @@ int main(int argc, char ** argv){
 	}
 
 	printf("Starting capture loop\n");
-	pcap_loop(handle, 5000, packetHandler, NULL);
+	pcap_loop(handle, 0, packetHandler, NULL);
 
 
 	printf("\n");
@@ -129,7 +129,7 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 			//struct device *new_dev = (struct device *) malloc (sizeof(struct device));
 			//new_dev->address[0] = hdr->sa[0];
 			//FILE *fd = fdopen(socket_desc, "w");
-			sprintf(message,"%02x:%02x:%02x:%02x:%02x:%02x - %s - %d \n", hdr->sa[0],
+			sprintf(message,"%02x:%02x:%02x:%02x:%02x:%02x %s %d \n", hdr->sa[0],
                 	                                                    hdr->sa[1],
                         	                                            hdr->sa[2],
                                 	                                    hdr->sa[3],
@@ -195,7 +195,7 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 			//struct device *new_dev = (struct device *) malloc (sizeof(struct device));
 			//new_dev->address[0] = hdr->sa[0];
 			//FILE *fd = fdopen(socket_desc, "w");
-			sprintf(message,"%02x:%02x:%02x:%02x:%02x:%02x - %s - %d \n", hdr->sa[0],
+			sprintf(message,"%02x:%02x:%02x:%02x:%02x:%02x %s %d \n", hdr->sa[0],
                 	                                                    hdr->sa[1],
                         	                                            hdr->sa[2],
                                 	                                    hdr->sa[3],
