@@ -70,7 +70,7 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 	struct ieee80211_radiotap_header *rthdr;
 	rthdr = (struct ieee80211_radiotap_header *) packet;
 	uint8_t *type_subtype = (uint8_t *) packet + rthdr->it_len;
-
+	uint8_t  *rx = (uint8_t *) packet + (8*22);  //22 byte do radiotap header corresponde ao rx da antena
 	/*Os 2 bits menos significativos do campo type_subtype identificam o protocolo (sempre 00), os 2 seguintes
 	representam o tipo (00:management, 01:control, 10:data) e os 4 ,mais significativos o subtipo.
 	por isso o if abaixo filtra os numeros invalidos(00001100) */

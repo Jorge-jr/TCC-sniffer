@@ -15,13 +15,13 @@
 
 void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
 void channel_hopper();
-
+void channel_hopper_incremental();
 
 typedef struct device{
 	uint8_t address[6];
 	int count;
 	struct device *next;
-}device ;
+}device;
 
 
 void channel_hopper(){
@@ -35,10 +35,57 @@ void channel_hopper(){
 		system(str);
 		//system(" ip link set dev wlan0 up");
 		system("iwlist mon0 channel");
-		sleep(0.5);
+		//sleep(0.5);
 		channel = (rand() % 11) + 1;
 	}
 }
+
+
+void channel_hopper_incremental(){
+        //int ch = 1;
+        char str[24];
+        while (1){
+		system("ifconfig wlan0 down");
+                system( "iw dev mon0 set channel 1");
+                sleep(1);
+                system("iwlist mon0 channel");
+		system( "iw dev mon0 set channel 2");
+                sleep(1);
+                system("iwlist mon0 channel");
+		system( "iw dev mon0 set channel 3");
+                sleep(1);
+                system("iwlist mon0 channel");
+               system( "iw dev mon0 set channel 4");
+                sleep(1);
+                system("iwlist mon0 channel");
+               system( "iw dev mon0 set channel 5");
+                sleep(1);
+                system("iwlist mon0 channel");
+               system( "iw dev mon0 set channel 6");
+                sleep(1);
+                system("iwlist mon0 channel");
+               system( "iw dev mon0 set channel 7");
+                sleep(1);
+                system("iwlist mon0 channel");
+               system( "iw dev mon0 set channel 8");
+                sleep(1);
+                system("iwlist mon0 channel");
+               system( "iw dev mon0 set channel 9");
+                sleep(1);
+                system("iwlist mon0 channel");
+               system( "iw dev mon0 set channel 10");
+                sleep(1);
+                system("iwlist mon0 channel");
+               system( "iw dev mon0 set channel 11");
+                sleep(1);
+                system("iwlist mon0 channel");
+               system( "iw dev mon0 set channel 12");
+                sleep(1);
+                system("iwlist mon0 channel");
+
+        }
+}
+
 
 
 pthread_t hopper;
@@ -48,7 +95,7 @@ int sniffed_devices = 0;
 int main(int argc, char ** argv){
 
 
-	pthread_create(&hopper, NULL, channel_hopper, NULL);
+	//pthread_create(&hopper, NULL, channel_hopper, NULL);
 	char device[] = "mon0";
 	char *errbuf;
 	int linktype;
@@ -108,6 +155,7 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 	struct ieee80211_radiotap_header *rthdr;
 	rthdr = (struct ieee80211_radiotap_header *) packet;
 	uint8_t *type_subtype = (uint8_t *) packet + rthdr->it_len;
+	int8_t  *rx = (uint8_t *) packet + 22;  //22o byte do radiotap header = antena signal dBm
 
 	/*Os 2 bits menos significativos do campo type_subtype identificam o protocolo (sempre 00), os 2 seguintes
 	representam o tipo (00:management, 01:control, 10:data) e os 4 ,mais significativos o subtipo.
@@ -129,14 +177,15 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 			//struct device *new_dev = (struct device *) malloc (sizeof(struct device));
 			//new_dev->address[0] = hdr->sa[0];
 			//FILE *fd = fdopen(socket_desc, "w");
-			sprintf(message,"%02x:%02x:%02x:%02x:%02x:%02x %s %d \n", hdr->sa[0],
+			sprintf(message,"%02x:%02x:%02x:%02x:%02x:%02x %s %d %d \n", hdr->sa[0],
                 	                                                    hdr->sa[1],
                         	                                            hdr->sa[2],
                                 	                                    hdr->sa[3],
                                         	                            hdr->sa[4],
                                                 	                    hdr->sa[5],
 									    hostname,
-									    is_beacon);
+									    is_beacon,
+									    *rx);
 			int sockerr = send(socket_desc, message, strlen(message) , 0);
 			if (sockerr >= 0){
 
@@ -195,14 +244,15 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 			//struct device *new_dev = (struct device *) malloc (sizeof(struct device));
 			//new_dev->address[0] = hdr->sa[0];
 			//FILE *fd = fdopen(socket_desc, "w");
-			sprintf(message,"%02x:%02x:%02x:%02x:%02x:%02x %s %d \n", hdr->sa[0],
+			sprintf(message,"%02x:%02x:%02x:%02x:%02x:%02x %s %d %d \n", hdr->sa[0],
                 	                                                    hdr->sa[1],
                         	                                            hdr->sa[2],
                                 	                                    hdr->sa[3],
                                         	                            hdr->sa[4],
                         	                    			    hdr->sa[5],
 									    hostname,
-									    is_beacon);
+									    is_beacon,
+									    *rx);
 
 			int sockerr = send(socket_desc, message, strlen(message) , 0);
 			if (sockerr >= 0){
