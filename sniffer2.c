@@ -145,7 +145,7 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 	gethostname(hostname, 10);
 	int socket_desc;  //socket descriptor
 	socket_desc = socket(AF_INET, SOCK_DGRAM,IPPROTO_UDP);  //AF_INET = IPV4  --  SOCK_STREAM = TCP
-	if(socket_desc == -1) printf("Could not create socket");
+	if(socket_desc == -1) printf("Could not create socket :(\n");
 	struct sockaddr_in server;
 	int server_struct_len = sizeof(server);
 	server.sin_family = AF_INET;
@@ -157,20 +157,25 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 	rthdr = (struct ieee80211_radiotap_header *) packet;
 	uint8_t *type_subtype = (uint8_t *) packet + rthdr->it_len;
 	int8_t  *rx = (uint8_t *) packet + 22;  //22o byte do radiotap header = antena signal dBm
-	if (*rx == 0) return;
+	if ((*rx <= -50) || (*rx >= 0)){
+		close(socket_desc);
+		return;
+	}
 	/*Os 2 bits menos significativos do campo type_subtype identificam o protocolo (sempre 00), os 2 seguintes
 	representam o tipo (00:management, 01:control, 10:data) e os 4 ,mais significativos o subtipo.
 	por isso o if abaixo filtra os numeros invalidos(00001100) */
         if ((*type_subtype & 12) == 12){
                 printf("Not an ieee802.11 frame type!\n");
         }else if ((*type_subtype & 12) == 0){  //type = 00 ->  management
-		if ((*type_subtype & 240) == 128) return; // 10000000 and 11110000 = 10000000 -> trata-se de um beacon
+		if ((*type_subtype & 240) == 128){
+			close(socket_desc);
+			return; // 10000000 and 11110000 = 10000000 -> trata-se de um beacon
+		}
 		struct mgmt_header_t *hdr = (struct mgmt_header_t *) (packet + rthdr->it_len);
 
 		if (connect(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0){
-			 printf("connection error\n");
+			 printf("error\n");
 		}else{
-			printf("connected\n");
 			char message[6];
 
 			//message[0] = hdr->sa[0];
@@ -235,9 +240,8 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 		}*/
 
 		if (connect(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0){
-			 printf("connection error\n");
+			 printf("error\n");
 		}else{
-			printf("connected\n");
 			char message[6];
 
 			//message[0] = hdr->sa[0];
