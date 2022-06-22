@@ -1,3 +1,4 @@
+
 #include "radiotap.h"
 #include "ieee80211.h"
 #include <stdio.h>
@@ -31,7 +32,7 @@ void channel_hopper(){
 	while (1){
 		sprintf(str, "iw dev mon0 set channel %d", channel);
 		system("ifconfig wlan0 down");
-		sleep(1);
+		sleep(0.5);
 		system(str);
 		//system(" ip link set dev wlan0 up");
 		system("iwlist mon0 channel");
@@ -156,14 +157,14 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
 	rthdr = (struct ieee80211_radiotap_header *) packet;
 	uint8_t *type_subtype = (uint8_t *) packet + rthdr->it_len;
 	int8_t  *rx = (uint8_t *) packet + 22;  //22o byte do radiotap header = antena signal dBm
-
+	if (*rx == 0) return;
 	/*Os 2 bits menos significativos do campo type_subtype identificam o protocolo (sempre 00), os 2 seguintes
 	representam o tipo (00:management, 01:control, 10:data) e os 4 ,mais significativos o subtipo.
 	por isso o if abaixo filtra os numeros invalidos(00001100) */
         if ((*type_subtype & 12) == 12){
                 printf("Not an ieee802.11 frame type!\n");
         }else if ((*type_subtype & 12) == 0){  //type = 00 ->  management
-		if ((*type_subtype & 240) == 128) is_beacon = 1; // 10000000 and 11110000 = 10000000 -> trata-se de um beacon
+		if ((*type_subtype & 240) == 128) return; // 10000000 and 11110000 = 10000000 -> trata-se de um beacon
 		struct mgmt_header_t *hdr = (struct mgmt_header_t *) (packet + rthdr->it_len);
 
 		if (connect(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0){
@@ -184,7 +185,7 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
                                         	                            hdr->sa[4],
                                                 	                    hdr->sa[5],
 									    hostname,
-									    is_beacon,
+									    1,
 									    *rx);
 			int sockerr = send(socket_desc, message, strlen(message) , 0);
 			if (sockerr >= 0){
@@ -251,7 +252,7 @@ void packetHandler(u_char *args, const struct pcap_pkthdr *header, const u_char 
                                         	                            hdr->sa[4],
                         	                    			    hdr->sa[5],
 									    hostname,
-									    is_beacon,
+									    1,
 									    *rx);
 
 			int sockerr = send(socket_desc, message, strlen(message) , 0);
